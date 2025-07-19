@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "KLhVRIG5YqIQG0HxkJ9VQqOvOfD9d7vXWfIwPDE41lU=",
+  "Source": "GuessTheNumber.backend",
+  "BasePath": "_content/GuessTheNumber.backend",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
