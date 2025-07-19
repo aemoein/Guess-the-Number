@@ -1,3 +1,5 @@
+namespace GuessTheNumber.backend.Data;
+
 using Microsoft.EntityFrameworkCore;
 using GuessTheNumber.backend.Models;
 
