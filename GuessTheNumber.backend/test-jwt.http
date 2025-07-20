@@ -1,0 +1,34 @@
+### Test JWT Authentication
+### First, test if the server is running
+GET http://localhost:5000/api/test
+
+### Register a new user
+POST http://localhost:5000/api/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpass123"
+}
+
+### Login and get JWT token
+POST http://localhost:5000/api/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpass123"
+}
+
+### Test protected endpoint with JWT token
+### Replace {{token}} with the actual token from login response
+GET http://localhost:5000/api/me
+Authorization: Bearer {{token}}
+
+### Start a new game with JWT token
+POST http://localhost:5000/api/start
+Authorization: Bearer {{token}}
+
+### Make a guess with JWT token
+POST http://localhost:5000/api/guess/25
+Authorization: Bearer {{token}}

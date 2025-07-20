@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Confetti from 'react-confetti';
 import { useWindowSize } from '@react-hook/window-size';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +10,7 @@ import {
   Toast,
   GuessCard,
 } from '../components';
-import { apiUrl } from '../config';
+import { useAuth } from '../contexts/AuthContext';
 
 const Game = () => {
   const [username, setUsername] = useState('');
@@ -28,41 +27,45 @@ const Game = () => {
 
   const navigate = useNavigate();
   const [width, height] = useWindowSize();
-
-  axios.defaults.withCredentials = true;
+  const { user, apiCall } = useAuth();
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const resp = await axios.get(`${apiUrl}/test`);
-        console.log("me:", resp.data)
-        const res = await axios.get(`${apiUrl}/me`);
-        console.log("me:", res.data)
-        if (res.data?.username) {
-          setUsername(res.data.username);
-          if (res.data.bestScore) setBestScore(res.data.bestScore);
-          startNewGame();
-        } else {
-          navigate('/login');
+    const initializeGame = async () => {
+      if (user) {
+        setUsername(user.username);
+        
+        try {
+          // Get user info and best score
+          const res = await apiCall('/me');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.bestScore) setBestScore(data.bestScore);
+          }
+          
+          // Start a new game
+          await startNewGame();
+        } catch (err) {
+          console.error('Error initializing game:', err);
         }
-      } catch (err) {
-        navigate('/login');
       }
     };
 
-    checkSession();
-  }, [navigate]);
+    initializeGame();
+  }, [user]);
 
   const startNewGame = async () => {
     try {
-      const res = await axios.post(`${apiUrl}/start`);
-      setGameState(res.data);
+      const res = await apiCall('/start', { method: 'POST' });
+      const data = await res.json();
+      
+      setGameState(data);
       setHistory([]);
       setGuess('');
       setScore(0);
       setLastResult(null);
       setShowConfetti(false);
-    } catch {
+    } catch (error) {
+      console.error('Error starting new game:', error);
       showToast('Failed to start new game.', 'error');
     }
   };
@@ -76,27 +79,30 @@ const Game = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${apiUrl}/guess/${numericGuess}`);
-      console.log(`Guess: ${numericGuess} → Result: ${res.data}`);
+      const res = await apiCall(`/guess/${numericGuess}`, { method: 'POST' });
+      const data = await res.json();
+      
+      console.log(`Guess: ${numericGuess} → Result:`, data);
 
       setHistory(prev => [
         ...prev,
-        { guess: numericGuess, result: res.data.result },
+        { guess: numericGuess, result: data.result },
       ]);
-      setScore(res.data.attempts);
+      setScore(data.attempts);
       setGuess('');
-      setLastResult(res.data.result);
+      setLastResult(data.result);
 
-      if (res.data.result === 'correct') {
+      if (data.result === 'correct') {
         showToast('🎉 Correct! You won!', 'success');
-        if (res.data.newBestScore != null) {
-          setBestScore(res.data.newBestScore);
+        if (data.newBestScore != null) {
+          setBestScore(data.newBestScore);
         }
         setShowConfetti(true);
       } else {
-        showToast(res.data.message, 'info');
+        showToast(data.message, 'info');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error submitting guess:', error);
       showToast('Something went wrong while submitting your guess.', 'error');
     } finally {
       setLoading(false);

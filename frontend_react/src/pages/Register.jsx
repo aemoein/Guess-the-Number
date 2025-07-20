@@ -7,13 +7,13 @@ import {
   PrimaryButton,
   ErrorMessage,
 } from '../components';
-import { apiUrl } from '../config';
+import { useAuth } from '../contexts/AuthContext';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +21,8 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!username || !email || !password) {
-      setError('All fields are required.');
+    if (!username || !password) {
+      setError('Both username and password are required.');
       return;
     }
 
@@ -30,27 +30,13 @@ const Register = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Safe to keep; backend just won’t set session
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-        }),
-      });
-
-      const message = await response.text();
-
-      if (response.ok) {
-        // ✅ Force login after register — redirect user to login page
+      const result = await register(username, password);
+      
+      if (result.success) {
         alert('✅ Registration successful! Please log in.');
         navigate('/login');
       } else {
-        setError(message || 'Registration failed. Try a different username.');
+        setError(result.error || 'Registration failed. Try a different username.');
       }
     } catch (err) {
       console.error(err);
@@ -75,15 +61,6 @@ const Register = () => {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
-          />
-
-          <InputField
-            label="Email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
           />
 

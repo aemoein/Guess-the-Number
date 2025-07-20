@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GuessTheNumber.backend.Services;
 using GuessTheNumber.backend.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GuessTheNumber.backend.Controllers;
 
@@ -10,11 +11,18 @@ public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IHttpContextAccessor _httpContext;
+    private readonly IJwtService _jwtService;
 
-    public UserController(IUserService userService, IHttpContextAccessor httpContext)
+    public UserController(IUserService userService, IHttpContextAccessor httpContext, IJwtService jwtService)
     {
         _userService = userService;
         _httpContext = httpContext;
+        _jwtService = jwtService;
+    }
+
+    private string? GetUsernameFromContext()
+    {
+        return _httpContext.HttpContext?.Items["Username"]?.ToString();
     }
 
     [HttpPost("register")]
@@ -30,8 +38,15 @@ public class UserController : ControllerBase
         var user = await _userService.LoginAsync(userDto.Username, userDto.Password);
         if (user != null)
         {
-            _httpContext.HttpContext?.Session.SetString("User", userDto.Username);
-            return Ok("✅ Login successful.");
+            var token = _jwtService.GenerateToken(user.Username, user.Id.ToString());
+            
+            var response = new LoginResponseDto
+            {
+                Token = token,
+                Username = user.Username
+            };
+            
+            return Ok(response);
         }
 
         return Unauthorized("❌ Invalid credentials.");
@@ -40,7 +55,8 @@ public class UserController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        _httpContext.HttpContext?.Session.Clear();
+        // With JWT, logout is handled client-side by removing the token
+        // No server-side state to clear
         await _userService.LogoutAsync();
         return Ok("👋 Logged out.");
     }
@@ -48,7 +64,7 @@ public class UserController : ControllerBase
     [HttpPost("start")]
     public async Task<IActionResult> StartNewGame()
     {
-        var username = _httpContext.HttpContext?.Session.GetString("User");
+        var username = GetUsernameFromContext();
         if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
 
         await _userService.StartNewGame(username);
@@ -58,7 +74,7 @@ public class UserController : ControllerBase
     [HttpPost("guess/{number}")]
     public async Task<IActionResult> GuessNumber(int number)
     {
-        var username = _httpContext.HttpContext?.Session.GetString("User");
+        var username = GetUsernameFromContext();
         if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
 
         var result = await _userService.GuessNumber(username, number);
@@ -69,12 +85,12 @@ public class UserController : ControllerBase
     [HttpGet("bestscore")]
     public async Task<IActionResult> GetBestScore()
     {
-        var username = _httpContext.HttpContext?.Session.GetString("User");
+        var username = GetUsernameFromContext();
         if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
 
         var best = await _userService.GetBestScoreAsync(username);
         return Ok(best == null
-            ? "📭 No score yet. Start playing!"
+            ? "📝 No score yet. Start playing!"
             : $"🏆 Your best score is {best} guesses.");
     }
 
@@ -87,7 +103,7 @@ public class UserController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
-        var username = HttpContext.Session.GetString("User");
+        var username = GetUsernameFromContext();
         if (string.IsNullOrEmpty(username))
             return Unauthorized();
 

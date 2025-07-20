@@ -3,6 +3,9 @@ using GuessTheNumber.backend.Repositories;
 using GuessTheNumber.backend.Services;
 using GuessTheNumber.backend.Middleware;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,17 +14,33 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.AddControllers();
-builder.Services.AddDistributedMemoryCache();
 
-builder.Services.AddSession(options =>
+// JWT Authentication Configuration
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] ?? "DefaultSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "GuessTheNumberAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "GuessTheNumberClient";
+
+builder.Services.AddAuthentication(options =>
 {
-    options.IdleTimeout = TimeSpan.FromHours(1);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -50,8 +69,7 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(allowedOrigins.ToArray())
             .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+            .AllowAnyMethod();
     });
 });
 
@@ -66,13 +84,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ErrorLoggingMiddleware>();
+app.UseMiddleware<JWTMiddleware>();
 
 app.UseHttpsRedirection();
 
-app.UseSession();
-
 app.UseCors("FrontendPolicy");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

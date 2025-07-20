@@ -8,3 +8,4 @@ export { default as AuthCard } from './AuthCard';
 export { default as ErrorMessage } from './ErrorMessage';
 export { default as InputField } from './InputField';
 export { default as PrimaryButton } from './PrimaryButton';
+export { default as ProtectedRoute } from './ProtectedRoute';

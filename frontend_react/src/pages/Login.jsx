@@ -7,7 +7,7 @@ import {
   PrimaryButton,
   ErrorMessage,
 } from '../components';
-import { apiUrl } from '../config';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -16,6 +16,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,23 +30,12 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
-      });
-
-      const message = await response.text();
-      console.log("response message:", message);
-      console.log("url: ", apiUrl)
-
-      if (response.ok) {
+      const result = await login(username, password);
+      
+      if (result.success) {
         navigate('/');
       } else {
-        setError(message || 'Login failed. Please try again.');
+        setError(result.error || 'Login failed. Please try again.');
       }
     } catch (err) {
       console.error(err);

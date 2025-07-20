@@ -1,19 +1,26 @@
 import React from 'react';
 import { PageWrapper, TopBar, GameCard } from '../components';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const handleNavigate = (path) => {
     console.log("Navigating to:", path);
     navigate(path);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <PageWrapper>
       <div className="w-full max-w-3xl">
-        <TopBar username="Player1" score={0} />
+        <TopBar username={user?.username || 'Player'} score={0} />
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
           <GameCard
@@ -29,9 +36,9 @@ const Home = () => {
           />
 
           <GameCard
-            title="⚙️ Settings"
-            description="Customize your experience or log out."
-            onClick={() => handleNavigate('/settings')}
+            title="🚪 Logout"
+            description="Sign out of your account safely."
+            onClick={handleLogout}
           />
 
           <GameCard
