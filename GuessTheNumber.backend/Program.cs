@@ -32,11 +32,27 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
+    {
+        var allowedOrigins = new List<string>
+        {
+            "http://localhost:3000",
+            "https://localhost:3000",
+            "https://guess-the-number-tau-ten.vercel.app"
+        };
+        
+        // Add any additional origins from environment variable
+        var additionalOrigins = builder.Configuration.GetValue<string>("AllowedOrigins");
+        if (!string.IsNullOrEmpty(additionalOrigins))
+        {
+            allowedOrigins.AddRange(additionalOrigins.Split(','));
+        }
+        
         policy
-            .WithOrigins("https://guess-the-number-tau-ten.vercel.app", "http://localhost:3000", "https://localhost:3000")
+            .WithOrigins(allowedOrigins.ToArray())
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials());
+            .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
@@ -54,9 +70,9 @@ app.UseHttpsRedirection();
 
 app.UseSession();
 
-app.UseAuthorization();
-
 app.UseCors("FrontendPolicy");
+
+app.UseAuthorization();
 
 app.MapControllers();
 
