@@ -41,19 +41,22 @@ public class UserService : IUserService
         return user;
     }
 
-    public Task<int> StartNewGame(string username)
+    public Task<GameSession> StartNewGame(string username)
     {
         var random = new Random();
         int targetNumber = random.Next(1, 44); // 1–43 inclusive
-        _activeGames[username] = new GameSession
+        var session = new GameSession
         {
             Target = targetNumber,
             Attempts = 0
         };
+        
+        _activeGames[username] = session;
 
         Console.WriteLine($"[StartNewGame] User: {username}, Target: {targetNumber}");
-        return Task.FromResult(targetNumber); // For dev only
+        return Task.FromResult(session);
     }
+
 
     public async Task<GuessResultDto> GuessNumber(string username, int guess)
     {
@@ -137,12 +140,5 @@ public class UserService : IUserService
             numBytesRequested: 256 / 8));
 
         return hashed == expectedHash;
-    }
-
-    // ====== Game Session Class ======
-    private class GameSession
-    {
-        public int Target { get; set; }
-        public int Attempts { get; set; }
     }
 }

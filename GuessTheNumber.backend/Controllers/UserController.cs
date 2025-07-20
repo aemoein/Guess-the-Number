@@ -65,11 +65,17 @@ public class UserController : ControllerBase
     public async Task<IActionResult> StartNewGame()
     {
         var username = GetUsernameFromContext();
-        if (string.IsNullOrEmpty(username)) return Unauthorized("User not found in token.");
+        if (string.IsNullOrEmpty(username))
+            return Unauthorized("User not found in token.");
 
-        await _userService.StartNewGame(username);
-        return Ok("🎲 New game started! Guess a number between 1 and 43.");
+        var gameState = await _userService.StartNewGame(username);
+
+        return Ok(new {
+            message = "🎲 New game started! Guess a number between 1 and 43.",
+            attempts = gameState.Attempts
+        });
     }
+
 
     [Authorize]
     [HttpPost("guess/{number}")]
