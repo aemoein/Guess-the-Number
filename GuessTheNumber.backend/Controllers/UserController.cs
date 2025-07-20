@@ -56,7 +56,6 @@ public class UserController : ControllerBase
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        // JWT logout is handled on the client (by deleting the token)
         return Ok("👋 Logged out. Please discard your token.");
     }
 

@@ -120,7 +120,7 @@ const Game = () => {
     {showConfetti && <Confetti width={width} height={height} />}
     <PageWrapper>
       <div className="w-full max-w-3xl mx-auto space-y-6">
-        <TopBar username={username} score={score} />
+        <TopBar username={username} score={bestScore} />
 
         {bestScore !== null && (
           <div className="text-center text-green-500 font-semibold">
@@ -131,13 +131,13 @@ const Game = () => {
         <div className="flex flex-col gap-6 items-center justify-center">
           <GuessCard title="Enter Your Guess">
             <input
-              type="number"
-              value={guess}
-              onChange={e => setGuess(e.target.value)}
-              className="w-full mt-2 p-2 text-black rounded-lg"
-              placeholder="1 - 43"
-              min="1"
-              max="43"
+                type="number"
+                value={guess}
+                onChange={e => setGuess(e.target.value)}
+                className="w-full mt-2 p-2 text-white font-bold text-center bg-gray-800 rounded-lg placeholder-gray-400"
+                placeholder="1 - 43"
+                min="1"
+                max="43"
             />
             <button
               onClick={submitGuess}

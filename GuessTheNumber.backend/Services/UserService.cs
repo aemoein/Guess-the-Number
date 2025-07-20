@@ -56,8 +56,7 @@ public class UserService : IUserService
         Console.WriteLine($"[StartNewGame] User: {username}, Target: {targetNumber}");
         return Task.FromResult(session);
     }
-
-
+    
     public async Task<GuessResultDto> GuessNumber(string username, int guess)
     {
         if (!_activeGames.ContainsKey(username))
