@@ -39,54 +39,55 @@ public class UserController : ControllerBase
         if (user != null)
         {
             var token = _jwtService.GenerateToken(user.Username, user.Id.ToString());
-            
+
             var response = new LoginResponseDto
             {
                 Token = token,
                 Username = user.Username
             };
-            
+
             return Ok(response);
         }
 
         return Unauthorized("❌ Invalid credentials.");
     }
 
+    [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public IActionResult Logout()
     {
-        // With JWT, logout is handled client-side by removing the token
-        // No server-side state to clear
-        await _userService.LogoutAsync();
-        return Ok("👋 Logged out.");
+        // JWT logout is handled on the client (by deleting the token)
+        return Ok("👋 Logged out. Please discard your token.");
     }
 
+    [Authorize]
     [HttpPost("start")]
     public async Task<IActionResult> StartNewGame()
     {
         var username = GetUsernameFromContext();
-        if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
+        if (string.IsNullOrEmpty(username)) return Unauthorized("User not found in token.");
 
         await _userService.StartNewGame(username);
         return Ok("🎲 New game started! Guess a number between 1 and 43.");
     }
 
+    [Authorize]
     [HttpPost("guess/{number}")]
     public async Task<IActionResult> GuessNumber(int number)
     {
         var username = GetUsernameFromContext();
-        if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
+        if (string.IsNullOrEmpty(username)) return Unauthorized("User not found in token.");
 
         var result = await _userService.GuessNumber(username, number);
-
         return Ok(result);
     }
 
+    [Authorize]
     [HttpGet("bestscore")]
     public async Task<IActionResult> GetBestScore()
     {
         var username = GetUsernameFromContext();
-        if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
+        if (string.IsNullOrEmpty(username)) return Unauthorized("User not found in token.");
 
         var best = await _userService.GetBestScoreAsync(username);
         return Ok(best == null
@@ -100,22 +101,20 @@ public class UserController : ControllerBase
         return Ok("✅ Backend is working.");
     }
 
+    [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
         var username = GetUsernameFromContext();
-        if (string.IsNullOrEmpty(username))
-            return Unauthorized();
+        if (string.IsNullOrEmpty(username)) return Unauthorized();
 
-        int? best = await _userService.GetBestScoreAsync(username);
-
+        var best = await _userService.GetBestScoreAsync(username);
         var dto = new MeDTO
         {
             Username = username,
-            BestScore = best
+            BestScore = best ?? 0
         };
 
         return Ok(dto);
     }
-
 }

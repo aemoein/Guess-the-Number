@@ -1,23 +1,19 @@
 using GuessTheNumber.backend.Models;
 using GuessTheNumber.backend.DTOs;
 using GuessTheNumber.backend.Repositories;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Security.Cryptography;
-using System.Runtime.ConstrainedExecution;
 
 namespace GuessTheNumber.backend.Services;
 
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepo;
-    private readonly IHttpContextAccessor _httpContextAccessor;
     private static readonly Dictionary<string, GameSession> _activeGames = new();
 
-    public UserService(IUserRepository userRepo, IHttpContextAccessor httpContextAccessor)
+    public UserService(IUserRepository userRepo)
     {
         _userRepo = userRepo;
-        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<bool> RegisterAsync(string username, string password)
@@ -39,18 +35,10 @@ public class UserService : IUserService
     public async Task<User?> LoginAsync(string username, string password)
     {
         var user = await _userRepo.GetByUsernameAsync(username);
-        if (user == null) return null;
+        if (user == null || !VerifyPassword(password, user.Password))
+            return null;
 
-        if (!VerifyPassword(password, user.Password)) return null;
-
-        _httpContextAccessor.HttpContext!.Session.SetString("User", username);
         return user;
-    }
-
-    public Task LogoutAsync()
-    {
-        _httpContextAccessor.HttpContext!.Session.Remove("User");
-        return Task.CompletedTask;
     }
 
     public Task<int> StartNewGame(string username)
@@ -64,16 +52,13 @@ public class UserService : IUserService
         };
 
         Console.WriteLine($"[StartNewGame] User: {username}, Target: {targetNumber}");
-
-        return Task.FromResult(targetNumber); // For dev only (can remove later)
+        return Task.FromResult(targetNumber); // For dev only
     }
-
 
     public async Task<GuessResultDto> GuessNumber(string username, int guess)
     {
         if (!_activeGames.ContainsKey(username))
         {
-            Console.WriteLine($"[GuessNumber] ❌ No active game for user: {username}");
             return new GuessResultDto
             {
                 Guess = guess,
@@ -89,15 +74,13 @@ public class UserService : IUserService
         var dto = new GuessResultDto
         {
             Guess = guess,
-            Attempts = session.Attempts,
-            NewBestScore = null
+            Attempts = session.Attempts
         };
 
         if (guess == session.Target)
         {
             dto.Result = "correct";
             dto.Message = $"🎉 Correct! You guessed it in {session.Attempts} tries.";
-            Console.WriteLine($"[GuessNumber] ✅ User: {username} | Guess: {guess} | Target: {session.Target} | Attempts: {session.Attempts}");
 
             int? updatedBest = await _userRepo.UpdateBestScoreAsync(username, session.Attempts);
             dto.NewBestScore = updatedBest;
@@ -108,13 +91,11 @@ public class UserService : IUserService
         {
             dto.Result = "higher";
             dto.Message = "🔼 Guess Higher.";
-            Console.WriteLine($"[GuessNumber] 🔼 User: {username} | Guess: {guess} | Target: {session.Target} | Attempts: {session.Attempts}");
         }
         else
         {
             dto.Result = "lower";
             dto.Message = "🔽 Guess Lower.";
-            Console.WriteLine($"[GuessNumber] 🔽 User: {username} | Guess: {guess} | Target: {session.Target} | Attempts: {session.Attempts}");
         }
 
         return dto;
@@ -164,5 +145,4 @@ public class UserService : IUserService
         public int Target { get; set; }
         public int Attempts { get; set; }
     }
-
 }
