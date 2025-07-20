@@ -21,6 +21,7 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -32,7 +33,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
         policy
-            .WithOrigins("https://guess-the-number-tau-ten.vercel.app")
+            .WithOrigins("https://guess-the-number-tau-ten.vercel.app", "http://localhost:3000", "https://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
@@ -51,11 +52,11 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseHttpsRedirection();
 
-app.UseCors("FrontendPolicy");
-
 app.UseSession();
 
 app.UseAuthorization();
+
+app.UseCors("FrontendPolicy");
 
 app.MapControllers();
 
