@@ -4,7 +4,7 @@ import { Toast } from './components';
 
 // Pages
 import Home from './pages/Home';
-import Login from './pages/login';
+import Login from './pages/Login';
 import Register from './pages/Register';
 import Game from './pages/Game';
 
