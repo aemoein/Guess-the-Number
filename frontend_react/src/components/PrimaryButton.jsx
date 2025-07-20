@@ -5,7 +5,7 @@ const PrimaryButton = ({ children, onClick, type = "button", disabled }) => (
     onClick={onClick}
     type={type}
     disabled={disabled}
-    className="px-6 py-2 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-2xl shadow-lg hover:scale-105 hover:shadow-xl transition disabled:opacity-50"
+    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-2xl transition-all duration-300 shadow-md hover:shadow-purple-700 disabled:opacity-50"
   >
     {children}
   </button>
