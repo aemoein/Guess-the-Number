@@ -39,6 +39,7 @@ const Login = () => {
       });
 
       const message = await response.text();
+      console.log("response message:", message);
       console.log("url: ", apiUrl)
 
       if (response.ok) {

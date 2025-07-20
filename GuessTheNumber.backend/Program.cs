@@ -65,6 +65,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseMiddleware<ErrorLoggingMiddleware>();
 
 app.UseHttpsRedirection();
 
