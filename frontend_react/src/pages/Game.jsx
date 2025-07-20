@@ -34,6 +34,8 @@ const Game = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        const resp = await axios.get(`${apiUrl}/test`);
+        console.log("me:", resp.data)
         const res = await axios.get(`${apiUrl}/me`);
         console.log("me:", res.data)
         if (res.data?.username) {
