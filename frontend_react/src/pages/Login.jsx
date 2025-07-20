@@ -34,16 +34,15 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // 👈 Required for session cookies
+        credentials: 'include',
         body: JSON.stringify({ username, password }),
       });
 
       const message = await response.text();
+      console.log("url: ", apiUrl)
 
       if (response.ok) {
-        // Optional: store logged-in flag in localStorage (if needed)
-        // localStorage.setItem('isLoggedIn', 'true');
-        navigate('/'); // 👈 use navigate instead of full reload
+        navigate('/');
       } else {
         setError(message || 'Login failed. Please try again.');
       }
