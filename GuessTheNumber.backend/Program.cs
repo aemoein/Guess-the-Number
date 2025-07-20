@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
         policy
-            .WithOrigins("http://localhost:5173", "https://guess-the-number-tau-ten.vercel.app")
+            .WithOrigins("https://guess-the-number-tau-ten.vercel.app")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials());
