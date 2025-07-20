@@ -5,7 +5,7 @@ using GuessTheNumber.backend.DTOs;
 namespace GuessTheNumber.backend.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api")]
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -28,12 +28,19 @@ public class UserController : ControllerBase
     public async Task<IActionResult> Login([FromBody] UserDto userDto)
     {
         var user = await _userService.LoginAsync(userDto.Username, userDto.Password);
-        return user != null ? Ok("✅ Login successful.") : Unauthorized("❌ Invalid credentials.");
+        if (user != null)
+        {
+            _httpContext.HttpContext?.Session.SetString("User", userDto.Username);
+            return Ok("✅ Login successful.");
+        }
+
+        return Unauthorized("❌ Invalid credentials.");
     }
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
+        _httpContext.HttpContext?.Session.Clear();
         await _userService.LogoutAsync();
         return Ok("👋 Logged out.");
     }
@@ -68,5 +75,21 @@ public class UserController : ControllerBase
         return Ok(best == null
             ? "📭 No score yet. Start playing!"
             : $"🏆 Your best score is {best} guesses.");
+    }
+
+    [HttpGet("test")]
+    public IActionResult Test()
+    {
+        return Ok("✅ Backend is working.");
+    }
+
+    [HttpGet("me")]
+    public IActionResult Me()
+    {
+        var username = HttpContext.Session.GetString("User"); // 🔧 FIXED: match key used in login
+        if (string.IsNullOrEmpty(username))
+            return Unauthorized();
+
+        return Ok(new { username });
     }
 }
