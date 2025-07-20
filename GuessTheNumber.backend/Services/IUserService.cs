@@ -1,6 +1,7 @@
 using GuessTheNumber.backend.Models;
-
+using GuessTheNumber.backend.DTOs;
 namespace GuessTheNumber.backend.Services;
+
 
 public interface IUserService
 {
@@ -8,6 +9,6 @@ public interface IUserService
     Task<User?> LoginAsync(string username, string password);
     Task LogoutAsync();
     Task<int> StartNewGame(string username);
-    Task<string> GuessNumber(string username, int guess);
+    Task<GuessResultDto> GuessNumber(string username, int guess);
     Task<int?> GetBestScoreAsync(string username);
 }

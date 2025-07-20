@@ -16,7 +16,7 @@ export default function App() {
         <Toast />
 
         <Routes>
-          <Route path="/" element={<Game />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/game" element={<Game />} />

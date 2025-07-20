@@ -35,16 +35,18 @@ public class UserRepository : IUserRepository
         return user?.BestScore;
     }
 
-    public async Task UpdateBestScoreAsync(string username, int newScore)
+    public async Task<int?> UpdateBestScoreAsync(string username, int newScore)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-        if (user != null)
+        if (user == null) return null;
+
+        if (user.BestScore == null || newScore < user.BestScore)
         {
-            if (user.BestScore == null || newScore < user.BestScore)
-            {
-                user.BestScore = newScore;
-                await _context.SaveChangesAsync();
-            }
+            user.BestScore = newScore;
+            await _context.SaveChangesAsync();
+            return user.BestScore;
         }
+
+        return null; // No update was made
     }
 }

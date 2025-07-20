@@ -8,5 +8,6 @@ public interface IUserRepository
     Task AddUserAsync(User user);
     Task<bool> UsernameExistsAsync(string username);
     Task<int?> GetBestScoreAsync(string username);
-    Task UpdateBestScoreAsync(string username, int newScore);
+    Task<int?> UpdateBestScoreAsync(string username, int newScore);
+
 }

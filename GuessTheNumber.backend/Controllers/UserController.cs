@@ -62,6 +62,7 @@ public class UserController : ControllerBase
         if (string.IsNullOrEmpty(username)) return Unauthorized("User not logged in.");
 
         var result = await _userService.GuessNumber(username, number);
+
         return Ok(result);
     }
 
@@ -84,12 +85,21 @@ public class UserController : ControllerBase
     }
 
     [HttpGet("me")]
-    public IActionResult Me()
+    public async Task<IActionResult> Me()
     {
-        var username = HttpContext.Session.GetString("User"); // 🔧 FIXED: match key used in login
+        var username = HttpContext.Session.GetString("User");
         if (string.IsNullOrEmpty(username))
             return Unauthorized();
 
-        return Ok(new { username });
+        int? best = await _userService.GetBestScoreAsync(username);
+
+        var dto = new MeDTO
+        {
+            Username = username,
+            BestScore = best
+        };
+
+        return Ok(dto);
     }
+
 }

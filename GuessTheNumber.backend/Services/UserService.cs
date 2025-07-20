@@ -1,8 +1,10 @@
 using GuessTheNumber.backend.Models;
+using GuessTheNumber.backend.DTOs;
 using GuessTheNumber.backend.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Security.Cryptography;
+using System.Runtime.ConstrainedExecution;
 
 namespace GuessTheNumber.backend.Services;
 
@@ -60,25 +62,62 @@ public class UserService : IUserService
             Target = targetNumber,
             Attempts = 0
         };
+
+        Console.WriteLine($"[StartNewGame] User: {username}, Target: {targetNumber}");
+
         return Task.FromResult(targetNumber); // For dev only (can remove later)
     }
 
-    public async Task<string> GuessNumber(string username, int guess)
+
+    public async Task<GuessResultDto> GuessNumber(string username, int guess)
     {
         if (!_activeGames.ContainsKey(username))
-            return "No active game. Please start a new game.";
+        {
+            Console.WriteLine($"[GuessNumber] ❌ No active game for user: {username}");
+            return new GuessResultDto
+            {
+                Guess = guess,
+                Result = "error",
+                Message = "No active game. Please start a new game.",
+                Attempts = 0
+            };
+        }
 
         var session = _activeGames[username];
         session.Attempts++;
 
+        var dto = new GuessResultDto
+        {
+            Guess = guess,
+            Attempts = session.Attempts,
+            NewBestScore = null
+        };
+
         if (guess == session.Target)
         {
-            await _userRepo.UpdateBestScoreAsync(username, session.Attempts);
+            dto.Result = "correct";
+            dto.Message = $"🎉 Correct! You guessed it in {session.Attempts} tries.";
+            Console.WriteLine($"[GuessNumber] ✅ User: {username} | Guess: {guess} | Target: {session.Target} | Attempts: {session.Attempts}");
+
+            int? updatedBest = await _userRepo.UpdateBestScoreAsync(username, session.Attempts);
+            dto.NewBestScore = updatedBest;
+
             _activeGames.Remove(username);
-            return $"🎉 Correct! You guessed it in {session.Attempts} tries.";
+        }
+        else if (guess < session.Target)
+        {
+            dto.Result = "higher";
+            dto.Message = "🔼 Guess Higher.";
+            Console.WriteLine($"[GuessNumber] 🔼 User: {username} | Guess: {guess} | Target: {session.Target} | Attempts: {session.Attempts}");
+        }
+        else
+        {
+            dto.Result = "lower";
+            dto.Message = "🔽 Guess Lower.";
+            Console.WriteLine($"[GuessNumber] 🔽 User: {username} | Guess: {guess} | Target: {session.Target} | Attempts: {session.Attempts}");
         }
 
-        return guess < session.Target ? "🔼 Guess Higher." : "🔽 Guess Lower.";
+        return dto;
     }
 
     public Task<int?> GetBestScoreAsync(string username)
@@ -125,4 +164,5 @@ public class UserService : IUserService
         public int Target { get; set; }
         public int Attempts { get; set; }
     }
+
 }

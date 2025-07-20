@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Confetti from 'react-confetti';
+import { useWindowSize } from '@react-hook/window-size';
+import { useNavigate } from 'react-router-dom';
 import {
   PageWrapper,
   TopBar,
   Loader,
   GameCard,
   Toast,
+  GuessCard,
 } from '../components';
 import { apiUrl } from '../config';
-import { useNavigate } from 'react-router-dom';
 
 const Game = () => {
   const [username, setUsername] = useState('');
@@ -20,7 +23,11 @@ const Game = () => {
   const [history, setHistory] = useState([]);
   const [gameState, setGameState] = useState(null);
   const [bestScore, setBestScore] = useState(null);
+  const [lastResult, setLastResult] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+
   const navigate = useNavigate();
+  const [width, height] = useWindowSize();
 
   axios.defaults.withCredentials = true;
 
@@ -28,6 +35,7 @@ const Game = () => {
     const checkSession = async () => {
       try {
         const res = await axios.get(`${apiUrl}/me`);
+        console.log("me:", res.data)
         if (res.data?.username) {
           setUsername(res.data.username);
           if (res.data.bestScore) setBestScore(res.data.bestScore);
@@ -50,7 +58,9 @@ const Game = () => {
       setHistory([]);
       setGuess('');
       setScore(0);
-    } catch (err) {
+      setLastResult(null);
+      setShowConfetti(false);
+    } catch {
       showToast('Failed to start new game.', 'error');
     }
   };
@@ -64,18 +74,27 @@ const Game = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${apiUrl}/guess`, { guess: numericGuess });
+      const res = await axios.post(`${apiUrl}/guess/${numericGuess}`);
+      console.log(`Guess: ${numericGuess} → Result: ${res.data}`);
 
-      setHistory(prev => [...prev, { guess: numericGuess, result: res.data.result }]);
-      setScore(res.data.score);
+      setHistory(prev => [
+        ...prev,
+        { guess: numericGuess, result: res.data.result },
+      ]);
+      setScore(res.data.attempts);
       setGuess('');
+      setLastResult(res.data.result);
 
-      if (res.data.result === 'correct' && res.data.newBestScore != null) {
-        setBestScore(res.data.newBestScore);
+      if (res.data.result === 'correct') {
+        showToast('🎉 Correct! You won!', 'success');
+        if (res.data.newBestScore != null) {
+          setBestScore(res.data.newBestScore);
+        }
+        setShowConfetti(true);
+      } else {
+        showToast(res.data.message, 'info');
       }
-
-      showToast(res.data.message, res.data.result === 'correct' ? 'success' : 'info');
-    } catch (err) {
+    } catch {
       showToast('Something went wrong while submitting your guess.', 'error');
     } finally {
       setLoading(false);
@@ -89,6 +108,8 @@ const Game = () => {
   };
 
   return (
+    <>
+    {showConfetti && <Confetti width={width} height={height} />}
     <PageWrapper>
       <div className="w-full max-w-3xl mx-auto space-y-6">
         <TopBar username={username} score={score} />
@@ -99,8 +120,8 @@ const Game = () => {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-          <GameCard title="Enter Your Guess">
+        <div className="flex flex-col gap-6 items-center justify-center">
+          <GuessCard title="Enter Your Guess">
             <input
               type="number"
               value={guess}
@@ -116,39 +137,74 @@ const Game = () => {
             >
               Submit Guess
             </button>
-          </GameCard>
+          </GuessCard>
 
-          <GameCard title="Previous Guesses">
+          {lastResult && lastResult !== 'correct' && (
+            <GuessCard title="Hint">
+              <p className="text-lg">
+                🔍 Try a{' '}
+                <span className="font-semibold text-yellow-300">
+                  {lastResult === 'higher' ? 'higher' : 'lower'}
+                </span>{' '}
+                number!
+              </p>
+            </GuessCard>
+          )}
+
+          {lastResult === 'correct' && (
+            <GuessCard title="🎉 Congratulations!">
+              <p className="text-lg font-medium mb-2">
+                You guessed the number in {score} tries!
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={startNewGame}
+                  className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg"
+                >
+                  🔄 New Game
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+                >
+                  🏠 Go Home
+                </button>
+              </div>
+            </GuessCard>
+          )}
+
+          <GuessCard title="Previous Guesses">
             <div className="space-y-1 text-sm">
-              {history.map((h, idx) => (
-                <div key={idx} className="flex justify-between">
-                  <span>🎯 {h.guess}</span>
-                  <span className={
-                    h.result === 'correct' ? 'text-green-400' :
-                    h.result === 'higher' ? 'text-blue-400' : 'text-red-400'
-                  }>
-                    {h.result}
-                  </span>
-                </div>
-              ))}
-              {!history.length && <p>No guesses yet.</p>}
+              {history.length > 0 ? (
+                history.map((h, idx) => (
+                  <div key={idx} className="flex justify-between">
+                    <span>🎯 {h.guess}</span>
+                    <span> {' - '} </span>
+                    <span
+                      className={
+                        h.result === 'correct'
+                          ? 'text-green-400'
+                          : h.result === 'higher'
+                          ? 'text-blue-400'
+                          : 'text-red-400'
+                      }
+                    >
+                      {h.result}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p>No guesses yet.</p>
+              )}
             </div>
-          </GameCard>
-        </div>
-
-        <div className="text-center">
-          <button
-            onClick={startNewGame}
-            className="mt-6 bg-indigo-700 hover:bg-indigo-800 text-white py-2 px-6 rounded-xl font-bold"
-          >
-            🔄 New Game
-          </button>
+          </GuessCard>
         </div>
 
         {loading && <Loader />}
         {message && <Toast message={message} type={type} />}
       </div>
     </PageWrapper>
+    </>
   );
 };
 
